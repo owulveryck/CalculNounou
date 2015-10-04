@@ -109,9 +109,20 @@ func main() {
 		log.Fatalf("Unable to retrieve calendar Client %v", err)
 	}
 
+	// Getting calendar list
+	/*
+		calendarList, err := srv.CalendarList.List().Do()
+		if err != nil {
+			log.Fatalf("Unable to retrieve the calendar list. %v", err)
+		}
+		for _, i := range calendarList.Items {
+			fmt.Printf("Id:%s, Summary:%s\n", i.Id, i.Summary)
+		}
+	*/
+	// Events
 	t := time.Now().Format(time.RFC3339)
-	events, err := srv.Events.List("primary").ShowDeleted(false).
-		SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
+	events, err := srv.Events.List("ug8gqc2m8qr0hdr012lf5grc14@group.calendar.google.com").ShowDeleted(false).
+		SingleEvents(true).TimeMin(t).MaxResults(50).OrderBy("startTime").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve next ten of the user's events. %v", err)
 	}
