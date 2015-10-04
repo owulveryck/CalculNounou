@@ -1,13 +1,15 @@
 {
     "tarifs": {
-        "entretien":3.1,
+        "entretien":2.86,
         "repas":1.5,
-        "gouter":0.5
+        "gouter":0.5,
+        "tauxHoraire":3.60
     },
     "contrat":{
-        "salaireDeBase":0,
-        "nombreHeureTotal":0,
-        "dateDebutContrat":"2015-09-01",
-        "dateFinContrat":"2016-08-31"
+        "salaireDeBase":362,
+        "nombreDeCa":14,
+        "nombreHeureTotal":"1097",
+        "dateDebutContrat":"2015-Sep-01",
+        "dateFinContrat":"2016-Aug-31"
     }
 }
