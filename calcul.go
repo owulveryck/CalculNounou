@@ -242,7 +242,7 @@ func main() {
 				nombreDeJour = nombreDeJour + 1
 				if eleonore.MatchString(i.Summary) {
 					nombreDeRepas = nombreDeRepas + 1
-					if end.Hour() > 16 {
+					if end.Hour() >= 16 {
 						nombreDeGouter = nombreDeGouter + 1
 					}
 				}
