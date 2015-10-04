@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -21,10 +22,10 @@ import (
 
 type Config struct {
 	Contrat struct {
-		DateDebutContrat string        `json:"dateDebutContrat"`
-		DateFinContrat   string        `json:"dateFinContrat"`
-		NombreHeureTotal time.Duration `json:"nombreHeureTotal"`
-		SalaireDeBase    float64       `json:"salaireDeBase"`
+		DateDebutContrat string  `json:"dateDebutContrat"`
+		DateFinContrat   string  `json:"dateFinContrat"`
+		NombreHeureTotal string  `json:"nombreHeureTotal"`
+		SalaireDeBase    float64 `json:"salaireDeBase"`
 	} `json:"contrat"`
 	Tarifs struct {
 		Entretien float64 `json:"entretien"`
@@ -105,10 +106,53 @@ func saveToken(file string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
+func lastDate(year, month int) int {
+
+	// Given a month and a year, return the last
+	// date of the year.
+	//
+	// Just bump it up a month, subtract an hour, and grab
+	// that date.
+
+	if month == 12 {
+		year += 1
+	}
+	month += 1
+
+	t := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+
+	prev := t.Add(-time.Hour)
+
+	return prev.Day()
+
+}
+
 func main() {
 	ctx := context.Background()
-
+	var startYear = flag.String("start", "2015-09-01", "Date de début de période (format YYYY-MM-DD)")
+	var endYear = flag.String("end", "2016-08-31", "Date de début de période (Format YYYY-MM-DD)")
+	flag.Parse()
 	// Read the global config
+	conf, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		log.Fatalf("Unable to read client config file: %v", err)
+	}
+	var myconfig Config
+	err = json.Unmarshal(conf, &myconfig)
+	if err != nil {
+		log.Fatalf("Unable to read parse config file: %v", err)
+	}
+	startCalcul, err := time.Parse("2006-01-02", *startYear)
+	if err != nil {
+		log.Fatalf("Unable to read parse startDate : %v", err)
+	}
+	endCalcul, err := time.Parse("2006-01-02", *endYear)
+	if err != nil {
+		log.Fatalf("Unable to read parse endDate : %v", err)
+	}
+	debutContrat, _ := time.Parse("2006-Jan-02", myconfig.Contrat.DateDebutContrat)
+	finContrat, _ := time.Parse("2006-Jan-02", myconfig.Contrat.DateFinContrat)
+	fmt.Printf("Contrat:\n\tDebut: %v\n\tFin: %v\n", debutContrat, finContrat)
 
 	// Read the secret file
 	b, err := ioutil.ReadFile("client_secret.json")
@@ -138,21 +182,23 @@ func main() {
 		}
 	*/
 	// Events
-	startYear := time.Date(2015, time.September, 1, 1, 0, 0, 0, time.UTC).Format(time.RFC3339)
-	endYear := time.Date(2016, time.August, 31, 23, 0, 0, 0, time.UTC).Format(time.RFC3339)
 	//startEvent := time.Now().Format(time.RFC3339)
 	events, err := srv.Events.List("ug8gqc2m8qr0hdr012lf5grc14@group.calendar.google.com").ShowDeleted(false).
-		SingleEvents(true).TimeMin(startYear).TimeMax(endYear).OrderBy("startTime").Do()
+		SingleEvents(true).TimeMin(startCalcul.Format(time.RFC3339)).TimeMax(endCalcul.Format(time.RFC3339)).OrderBy("startTime").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve next ten of the user's events. %v", err)
 	}
-	var eleonoreEugenie = regexp.MustCompile(`Eléonore|Eugénie`)
+	var eleonore = regexp.MustCompile(`Eléonore`)
+	var eugenie = regexp.MustCompile(`Eugénie`)
 	var caNounou = regexp.MustCompile(`CA`)
 	nombreCA := 0
+	nombreDeGouter := 0.0
+	nombreDeRepas := 0.0
+	nombreDeJour := 0.0
 	var duree time.Duration
 	if len(events.Items) > 0 {
 		for _, i := range events.Items {
-			if eleonoreEugenie.MatchString(i.Summary) {
+			if eleonore.MatchString(i.Summary) || eugenie.MatchString(i.Summary) {
 				// Check des evenements Eléonore et Eugénie
 				var when string
 				// If the DateTime is an empty string the Event is an all-day Event.
@@ -182,6 +228,10 @@ func main() {
 	} else {
 		fmt.Printf("No upcoming events found.\n")
 	}
-	fmt.Printf("Duree Total d'acceuil: %s\n", duree)
-	fmt.Printf("Nombre de CA Total   : %v\n", nombreCA)
+	fmt.Printf("Calcul pour la période de %v à %v\n", *startYear, *endYear)
+	fmt.Printf("\tDuree d'acceuil: %s\n", duree)
+	fmt.Printf("\tNombre de CA   : %v\n", nombreCA)
+	fmt.Printf("Gouter:\n\tNombre: %v\n\tTarif: %v\n", nombreDeGouter, nombreDeGouter*myconfig.Tarifs.Gouter)
+	fmt.Printf("Repas:\n\tNombre: %v\n\tTarif: %v\n", nombreDeRepas, nombreDeRepas*myconfig.Tarifs.Repas)
+	fmt.Printf("Entretien:\n\tNombre: %v\n\tTarif: %v\n", nombreDeJour, nombreDeJour*myconfig.Tarifs.Entretien)
 }
