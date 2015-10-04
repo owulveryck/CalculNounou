@@ -1,4 +1,6 @@
 client_secret.json
+config.json
+CalculNounou
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
 *.a
