@@ -12,6 +12,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -108,8 +110,12 @@ func saveToken(file string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func lastDate(year, month int) int {
+func lastDate(date string) int {
 
+	mydate := strings.Split(date, "-")
+	var year, month int
+	year, _ = strconv.Atoi(mydate[0])
+	month, _ = strconv.Atoi(mydate[1])
 	// Given a month and a year, return the last
 	// date of the year.
 	//
@@ -131,9 +137,15 @@ func lastDate(year, month int) int {
 
 func main() {
 	ctx := context.Background()
-	var startYear = flag.String("start", "2015-09-01", "Date de début de période (format YYYY-MM-DD)")
-	var endYear = flag.String("end", "2016-08-31", "Date de début de période (Format YYYY-MM-DD)")
+	var startPeriod = flag.String("start", "2015-09-01", "Date de début de période (format YYYY-MM-DD)")
+	var endPeriod = flag.String("end", "2016-08-31", "Date de début de période (Format YYYY-MM-DD)")
+	var month = flag.String("month", "", "Mois du calcul (format YYYY-MM)")
 	flag.Parse()
+	if *month != "" {
+		*startPeriod = fmt.Sprintf("%v-01", *month)
+		endDay := lastDate(*month)
+		*endPeriod = fmt.Sprintf("%v-%v", *month, endDay)
+	}
 	// Read the global config
 	conf, err := ioutil.ReadFile("config.json")
 	if err != nil {
@@ -144,11 +156,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to read parse config file: %v", err)
 	}
-	startCalcul, err := time.Parse("2006-01-02", *startYear)
+	startCalcul, err := time.Parse("2006-01-02", *startPeriod)
 	if err != nil {
 		log.Fatalf("Unable to read parse startDate : %v", err)
 	}
-	endCalcul, err := time.Parse("2006-01-02", *endYear)
+	endCalcul, err := time.Parse("2006-01-02", *endPeriod)
 	if err != nil {
 		log.Fatalf("Unable to read parse endDate : %v", err)
 	}
@@ -288,7 +300,7 @@ func main() {
 		fmt.Printf("No upcoming events found.\n")
 	}
 	//salaireNet := duree.Hours() * myconfig.Tarifs.TauxHoraire
-	fmt.Printf("Calcul pour la période de %v à %v\n", *startYear, *endYear)
+	fmt.Printf("Calcul pour la période de %v à %v\n", *startPeriod, *endPeriod)
 	fmt.Printf("\tNombre de jours d'acceuil: %v\n", nombreDeJour)
 	fmt.Printf("\tDuree d'acceuil: %v heures (%v depuis %v / %v)\n", duree.Hours(), dureeDepuisLeDebut.Hours(), myconfig.Contrat.DateDebutContrat, myconfig.Contrat.NombreHeureTotal)
 
