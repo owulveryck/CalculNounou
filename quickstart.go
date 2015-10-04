@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"golang.org/x/net/context"
@@ -128,31 +129,42 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to retrieve next ten of the user's events. %v", err)
 	}
-
-	fmt.Println("Upcoming events:")
+	var eleonoreEugenie = regexp.MustCompile(`Eléonore|Eugénie`)
+	var caNounou = regexp.MustCompile(`CA`)
+	nombreCA := 0
+	var duree time.Duration
 	if len(events.Items) > 0 {
 		for _, i := range events.Items {
-			var when string
-			// If the DateTime is an empty string the Event is an all-day Event.
-			// So only Date is available.
-			if i.Start.DateTime != "" {
-				when = i.Start.DateTime
-			} else {
-				when = i.Start.Date
+			if eleonoreEugenie.MatchString(i.Summary) {
+				// Check des evenements Eléonore et Eugénie
+				var when string
+				// If the DateTime is an empty string the Event is an all-day Event.
+				// So only Date is available.
+				if i.Start.DateTime != "" {
+					when = i.Start.DateTime
+				} else {
+					when = i.Start.Date
+				}
+				// play with time formats
+				start, err := time.Parse(time.RFC3339, when)
+				if err != nil {
+					log.Printf("Unable to parse start date (%s). %v", when, err)
+				}
+				end, err := time.Parse(time.RFC3339, i.End.DateTime)
+				if err != nil {
+					log.Printf("Unable to parse start date. %v", err)
+				}
+				dureeAcceuil := end.Sub(start)
+				duree = duree + dureeAcceuil
+				//fmt.Printf("%s %s (%v)\n", i.Summary, when, dureeAcceuil)
 			}
-			// play with time formats
-			start, err := time.Parse(time.RFC3339, when)
-			if err != nil {
-				log.Fatalf("Unable to parse start date. %v", err)
+			if caNounou.MatchString(i.Summary) {
+				nombreCA = nombreCA + 1
 			}
-			end, err := time.Parse(time.RFC3339, i.End.DateTime)
-			if err != nil {
-				log.Fatalf("Unable to parse start date. %v", err)
-			}
-			fmt.Printf("%s (%v)\n", i.Summary, end.Sub(start))
 		}
 	} else {
 		fmt.Printf("No upcoming events found.\n")
 	}
-
+	fmt.Printf("Duree Total d'acceuil: %s\n", duree)
+	fmt.Printf("Nombre de CA Total   : %v\n", nombreCA)
 }
