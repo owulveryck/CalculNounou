@@ -26,6 +26,7 @@ type Config struct {
 		DateFinContrat   string  `json:"dateFinContrat"`
 		NombreHeureTotal string  `json:"nombreHeureTotal"`
 		SalaireDeBase    float64 `json:"salaireDeBase"`
+		NombreDeCa       float64 `json:"nombreDeCa"`
 	} `json:"contrat"`
 	Tarifs struct {
 		TauxHoraire float64 `json:"tauxHoraire"`
@@ -151,9 +152,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to read parse endDate : %v", err)
 	}
-	debutContrat, _ := time.Parse("2006-Jan-02", myconfig.Contrat.DateDebutContrat)
-	finContrat, _ := time.Parse("2006-Jan-02", myconfig.Contrat.DateFinContrat)
-	fmt.Printf("Contrat:\n\tDebut: %v\n\tFin: %v\n", debutContrat, finContrat)
+	//debutContrat, _ := time.Parse("2006-Jan-02", myconfig.Contrat.DateDebutContrat)
+	//finContrat, _ := time.Parse("2006-Jan-02", myconfig.Contrat.DateFinContrat)
+	//fmt.Printf("Contrat:\n\tDebut: %v\n\tFin: %v\n", debutContrat, finContrat)
 
 	// Read the secret file
 	b, err := ioutil.ReadFile("client_secret.json")
@@ -184,19 +185,23 @@ func main() {
 	*/
 	// Events
 	//startEvent := time.Now().Format(time.RFC3339)
+	var eleonore = regexp.MustCompile(`Eléonore`)
+	var eugenie = regexp.MustCompile(`Eugénie`)
+	var caNounou = regexp.MustCompile(`CA`)
+	nombreCA := 0
+	nombreCADepuisLeDebut := 0
+	nombreDeGouter := 0.0
+	nombreDeRepas := 0.0
+	nombreDeJourDepuisLeDebut := 0
+	nombreDeJour := 0
+	var duree time.Duration
+	var dureeDepuisLeDebut time.Duration
+	// Calcul des jours de la période en cours
 	events, err := srv.Events.List("ug8gqc2m8qr0hdr012lf5grc14@group.calendar.google.com").ShowDeleted(false).
 		SingleEvents(true).TimeMin(startCalcul.Format(time.RFC3339)).TimeMax(endCalcul.Format(time.RFC3339)).OrderBy("startTime").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve next ten of the user's events. %v", err)
 	}
-	var eleonore = regexp.MustCompile(`Eléonore`)
-	var eugenie = regexp.MustCompile(`Eugénie`)
-	var caNounou = regexp.MustCompile(`CA`)
-	nombreCA := 0
-	nombreDeGouter := 0.0
-	nombreDeRepas := 0.0
-	nombreDeJour := make(map[string]string, 0)
-	var duree time.Duration
 	if len(events.Items) > 0 {
 		for _, i := range events.Items {
 			if eleonore.MatchString(i.Summary) || eugenie.MatchString(i.Summary) {
@@ -221,9 +226,14 @@ func main() {
 				dureeAcceuil := end.Sub(start)
 				duree = duree + dureeAcceuil
 				//fmt.Printf("%s %s (%v)\n", i.Summary, when, dureeAcceuil)
-				jour := fmt.Sprintf("%v-%v-%v", start.Day(), start.Month(), start.Year())
-				nombreDeJour[jour] = i.Summary
-
+				//jour := fmt.Sprintf("%v-%v-%v", start.Day(), start.Month(), start.Year())
+				nombreDeJour = nombreDeJour + 1
+				if eleonore.MatchString(i.Summary) {
+					nombreDeRepas = nombreDeRepas + 1
+					if end.Hour() > 16 {
+						nombreDeGouter = nombreDeGouter + 1
+					}
+				}
 			}
 			if caNounou.MatchString(i.Summary) {
 				nombreCA = nombreCA + 1
@@ -232,15 +242,61 @@ func main() {
 	} else {
 		fmt.Printf("No upcoming events found.\n")
 	}
-	salaireNet := duree.Hours() * myconfig.Tarifs.TauxHoraire
-	fmt.Println(myconfig.Tarifs.TauxHoraire)
+	// Calcul des jours depuis le début du contrat
+	dateDebutContrat, err := time.Parse("2006-Jan-02", myconfig.Contrat.DateDebutContrat)
+	if err != nil {
+		log.Fatalf("Cannnt parse date debut contrat")
+	}
+	events, err = srv.Events.List("ug8gqc2m8qr0hdr012lf5grc14@group.calendar.google.com").ShowDeleted(false).
+		SingleEvents(true).TimeMin(dateDebutContrat.Format(time.RFC3339)).TimeMax(endCalcul.Format(time.RFC3339)).OrderBy("startTime").Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve next ten of the user's events. %v", err)
+	}
+	if len(events.Items) > 0 {
+		for _, i := range events.Items {
+			if eleonore.MatchString(i.Summary) || eugenie.MatchString(i.Summary) {
+				// Check des evenements Eléonore et Eugénie
+				var when string
+				// If the DateTime is an empty string the Event is an all-day Event.
+				// So only Date is available.
+				if i.Start.DateTime != "" {
+					when = i.Start.DateTime
+				} else {
+					when = i.Start.Date
+				}
+				// play with time formats
+				start, err := time.Parse(time.RFC3339, when)
+				if err != nil {
+					log.Printf("Unable to parse start date (%s). %v", when, err)
+				}
+				end, err := time.Parse(time.RFC3339, i.End.DateTime)
+				if err != nil {
+					log.Printf("Unable to parse start date. %v", err)
+				}
+				dureeAcceuil := end.Sub(start)
+				dureeDepuisLeDebut = dureeDepuisLeDebut + dureeAcceuil
+				//fmt.Printf("%s %s (%v)\n", i.Summary, when, dureeAcceuil)
+				//jour := fmt.Sprintf("%v-%v-%v", start.Day(), start.Month(), start.Year())
+				nombreDeJourDepuisLeDebut = nombreDeJourDepuisLeDebut + 1
+
+			}
+			if caNounou.MatchString(i.Summary) {
+				nombreCADepuisLeDebut = nombreCADepuisLeDebut + 1
+			}
+		}
+	} else {
+		fmt.Printf("No upcoming events found.\n")
+	}
+	//salaireNet := duree.Hours() * myconfig.Tarifs.TauxHoraire
 	fmt.Printf("Calcul pour la période de %v à %v\n", *startYear, *endYear)
-	fmt.Printf("\tNombre de jours d'acceuil: %v\n", len(nombreDeJour))
-	fmt.Printf("\tDuree d'acceuil: %v heures\n", duree.Hours())
-	fmt.Printf("\tSalaire net hypothetique: %v\n", salaireNet)
-	fmt.Printf("\tNombre de CA   : %v\n", nombreCA)
-	fmt.Printf("Gouter:\n\tNombre: %v\n\tTarif: %v\n", nombreDeGouter, nombreDeGouter*myconfig.Tarifs.Gouter)
-	fmt.Printf("Repas:\n\tNombre: %v\n\tTarif: %v\n", nombreDeRepas, nombreDeRepas*myconfig.Tarifs.Repas)
-	fmt.Printf("Entretien:\n\tNombre: %v\n\tTarif: %v\n", len(nombreDeJour), float64(len(nombreDeJour))*myconfig.Tarifs.Entretien)
-	fmt.Printf("\n\nNet a payer: %v\n", salaireNet+nombreDeGouter*myconfig.Tarifs.Gouter+nombreDeRepas+nombreDeRepas*myconfig.Tarifs.Repas+float64(len(nombreDeJour))*myconfig.Tarifs.Entretien)
+	fmt.Printf("\tNombre de jours d'acceuil: %v\n", nombreDeJour)
+	fmt.Printf("\tDuree d'acceuil: %v heures (%v depuis %v / %v)\n", duree.Hours(), dureeDepuisLeDebut.Hours(), myconfig.Contrat.DateDebutContrat, myconfig.Contrat.NombreHeureTotal)
+
+	fmt.Printf("\tSalaire de base: %v€\n", myconfig.Contrat.SalaireDeBase)
+	//fmt.Printf("\tSalaire net hypothetique: %v\n", salaireNet)
+	fmt.Printf("\tNombre de CA   : %v (%v/%v)\n", nombreCA, nombreCADepuisLeDebut, myconfig.Contrat.NombreDeCa)
+	fmt.Printf("Gouter:\n\tNombre: %v\n\tA payer: %v€\n", nombreDeGouter, nombreDeGouter*myconfig.Tarifs.Gouter)
+	fmt.Printf("Repas:\n\tNombre: %v\n\tA payer: %v€\n", nombreDeRepas, nombreDeRepas*myconfig.Tarifs.Repas)
+	fmt.Printf("Entretien:\n\tNombre: %v\n\tA payer: %v€\n", nombreDeJour, float64(nombreDeJour)*myconfig.Tarifs.Entretien)
+	fmt.Printf("\n\nNet a payer: %v€\n", myconfig.Contrat.SalaireDeBase+nombreDeGouter*myconfig.Tarifs.Gouter+nombreDeRepas+nombreDeRepas*myconfig.Tarifs.Repas+float64(nombreDeJour)*myconfig.Tarifs.Entretien)
 }
