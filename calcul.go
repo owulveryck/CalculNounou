@@ -94,6 +94,9 @@ func saveToken(file string, token *oauth2.Token) {
 func main() {
 	ctx := context.Background()
 
+	// Read the global config
+
+	// Read the secret file
 	b, err := ioutil.ReadFile("client_secret.json")
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)

@@ -1,0 +1,13 @@
+{
+    "tarifs": {
+        "entretien":3.1,
+        "repas":1.5,
+        "gouter":0.5,
+    },
+    "contrat":{
+        "salaireDeBase":0,
+        "nombreHeureTotal":0,
+        "dateDebutContrat":"2015-09-01",
+        "dateFinContrat":""2016-08-31"
+    }
+}
