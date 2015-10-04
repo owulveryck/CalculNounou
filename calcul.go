@@ -28,9 +28,10 @@ type Config struct {
 		SalaireDeBase    float64 `json:"salaireDeBase"`
 	} `json:"contrat"`
 	Tarifs struct {
-		Entretien float64 `json:"entretien"`
-		Gouter    float64 `json:"gouter"`
-		Repas     float64 `json:"repas"`
+		TauxHoraire float64 `json:"tauxHoraire"`
+		Entretien   float64 `json:"entretien"`
+		Gouter      float64 `json:"gouter"`
+		Repas       float64 `json:"repas"`
 	} `json:"tarifs"`
 }
 
@@ -194,7 +195,7 @@ func main() {
 	nombreCA := 0
 	nombreDeGouter := 0.0
 	nombreDeRepas := 0.0
-	nombreDeJour := 0.0
+	nombreDeJour := make(map[string]string, 0)
 	var duree time.Duration
 	if len(events.Items) > 0 {
 		for _, i := range events.Items {
@@ -220,6 +221,9 @@ func main() {
 				dureeAcceuil := end.Sub(start)
 				duree = duree + dureeAcceuil
 				//fmt.Printf("%s %s (%v)\n", i.Summary, when, dureeAcceuil)
+				jour := fmt.Sprintf("%v-%v-%v", start.Day(), start.Month(), start.Year())
+				nombreDeJour[jour] = i.Summary
+
 			}
 			if caNounou.MatchString(i.Summary) {
 				nombreCA = nombreCA + 1
@@ -229,9 +233,11 @@ func main() {
 		fmt.Printf("No upcoming events found.\n")
 	}
 	fmt.Printf("Calcul pour la période de %v à %v\n", *startYear, *endYear)
-	fmt.Printf("\tDuree d'acceuil: %s\n", duree)
+	fmt.Printf("\tNombre de jours d'acceuil: %v\n", len(nombreDeJour))
+	fmt.Printf("\tDuree d'acceuil: %v heures\n", duree.Hours())
+	fmt.Printf("\tNet a payer: %v\n", duree.Hours()*myconfig.Tarifs.TauxHoraire)
 	fmt.Printf("\tNombre de CA   : %v\n", nombreCA)
 	fmt.Printf("Gouter:\n\tNombre: %v\n\tTarif: %v\n", nombreDeGouter, nombreDeGouter*myconfig.Tarifs.Gouter)
 	fmt.Printf("Repas:\n\tNombre: %v\n\tTarif: %v\n", nombreDeRepas, nombreDeRepas*myconfig.Tarifs.Repas)
-	fmt.Printf("Entretien:\n\tNombre: %v\n\tTarif: %v\n", nombreDeJour, nombreDeJour*myconfig.Tarifs.Entretien)
+	fmt.Printf("Entretien:\n\tNombre: %v\n\tTarif: %v\n", len(nombreDeJour), float64(len(nombreDeJour))*myconfig.Tarifs.Entretien)
 }
