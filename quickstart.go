@@ -120,9 +120,11 @@ func main() {
 		}
 	*/
 	// Events
-	t := time.Now().Format(time.RFC3339)
+	startYear := time.Date(2015, time.September, 1, 1, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	endYear := time.Date(2016, time.August, 31, 23, 0, 0, 0, time.UTC).Format(time.RFC3339)
+	//startEvent := time.Now().Format(time.RFC3339)
 	events, err := srv.Events.List("ug8gqc2m8qr0hdr012lf5grc14@group.calendar.google.com").ShowDeleted(false).
-		SingleEvents(true).TimeMin(t).MaxResults(50).OrderBy("startTime").Do()
+		SingleEvents(true).TimeMin(startYear).TimeMax(endYear).OrderBy("startTime").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve next ten of the user's events. %v", err)
 	}
@@ -138,7 +140,16 @@ func main() {
 			} else {
 				when = i.Start.Date
 			}
-			fmt.Printf("%s (%s)\n", i.Summary, when)
+			// play with time formats
+			start, err := time.Parse(time.RFC3339, when)
+			if err != nil {
+				log.Fatalf("Unable to parse start date. %v", err)
+			}
+			end, err := time.Parse(time.RFC3339, i.End.DateTime)
+			if err != nil {
+				log.Fatalf("Unable to parse start date. %v", err)
+			}
+			fmt.Printf("%s (%v)\n", i.Summary, end.Sub(start))
 		}
 	} else {
 		fmt.Printf("No upcoming events found.\n")
