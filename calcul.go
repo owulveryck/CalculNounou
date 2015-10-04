@@ -19,6 +19,20 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
+type Config struct {
+	Contrat struct {
+		DateDebutContrat string        `json:"dateDebutContrat"`
+		DateFinContrat   string        `json:"dateFinContrat"`
+		NombreHeureTotal time.Duration `json:"nombreHeureTotal"`
+		SalaireDeBase    float64       `json:"salaireDeBase"`
+	} `json:"contrat"`
+	Tarifs struct {
+		Entretien float64 `json:"entretien"`
+		Gouter    float64 `json:"gouter"`
+		Repas     float64 `json:"repas"`
+	} `json:"tarifs"`
+}
+
 // getClient uses a Context and Config to retrieve a Token
 // then generate a Client. It returns the generated Client.
 func getClient(ctx context.Context, config *oauth2.Config) *http.Client {
