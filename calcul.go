@@ -301,8 +301,8 @@ func main() {
 	}
 	//salaireNet := duree.Hours() * myconfig.Tarifs.TauxHoraire
 	fmt.Printf("Calcul pour la période de %v à %v\n", *startPeriod, *endPeriod)
-	fmt.Printf("\tNombre de jours d'acceuil: %v\n", nombreDeJour)
-	fmt.Printf("\tDuree d'acceuil: %v heures (%v depuis %v / %v)\n", duree.Hours(), dureeDepuisLeDebut.Hours(), myconfig.Contrat.DateDebutContrat, myconfig.Contrat.NombreHeureTotal)
+	fmt.Printf("\tNombre de jours d'accueil: %v\n", nombreDeJour)
+	fmt.Printf("\tDurée d'accueil: %v heures (%v depuis %v / %v)\n", duree.Hours(), dureeDepuisLeDebut.Hours(), myconfig.Contrat.DateDebutContrat, myconfig.Contrat.NombreHeureTotal)
 
 	fmt.Printf("\tSalaire de base: %v€\n", myconfig.Contrat.SalaireDeBase)
 	//fmt.Printf("\tSalaire net hypothetique: %v\n", salaireNet)
