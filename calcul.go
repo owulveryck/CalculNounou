@@ -232,12 +232,15 @@ func main() {
 	} else {
 		fmt.Printf("No upcoming events found.\n")
 	}
+	salaireNet := duree.Hours() * myconfig.Tarifs.TauxHoraire
+	fmt.Println(myconfig.Tarifs.TauxHoraire)
 	fmt.Printf("Calcul pour la période de %v à %v\n", *startYear, *endYear)
 	fmt.Printf("\tNombre de jours d'acceuil: %v\n", len(nombreDeJour))
 	fmt.Printf("\tDuree d'acceuil: %v heures\n", duree.Hours())
-	fmt.Printf("\tNet a payer: %v\n", duree.Hours()*myconfig.Tarifs.TauxHoraire)
+	fmt.Printf("\tSalaire net hypothetique: %v\n", salaireNet)
 	fmt.Printf("\tNombre de CA   : %v\n", nombreCA)
 	fmt.Printf("Gouter:\n\tNombre: %v\n\tTarif: %v\n", nombreDeGouter, nombreDeGouter*myconfig.Tarifs.Gouter)
 	fmt.Printf("Repas:\n\tNombre: %v\n\tTarif: %v\n", nombreDeRepas, nombreDeRepas*myconfig.Tarifs.Repas)
 	fmt.Printf("Entretien:\n\tNombre: %v\n\tTarif: %v\n", len(nombreDeJour), float64(len(nombreDeJour))*myconfig.Tarifs.Entretien)
+	fmt.Printf("\n\nNet a payer: %v\n", salaireNet+nombreDeGouter*myconfig.Tarifs.Gouter+nombreDeRepas+nombreDeRepas*myconfig.Tarifs.Repas+float64(len(nombreDeJour))*myconfig.Tarifs.Entretien)
 }
